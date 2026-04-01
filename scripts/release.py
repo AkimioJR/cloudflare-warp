@@ -4,57 +4,48 @@ import shutil
 
 from utils import process_deb, ProcessResult
 from get_latest_version import get_latest_version
+from label import Distro, Arch
 
 
-SUPPORT_DISTRO_MAP = {
-    "trixie": "Trixie (13)",
-    "bookworm": "Bookworm (12)",
-    "bullseye": "Bullseye (11)",
-    # "buster": "Buster (10)",
-    # "stretch": "Stretch (9)",
-    "noble": "Noble (24.04)",
-    "jammy": "Jammy (22.04)",
-    "focal": "Focal (20.04)",
-    # "bionic": "Bionic (18.04)",
-    # "xenial": "Xenial (16.04)",
-}
+def parse_arch(value: str) -> Arch:
+    try:
+        return Arch(value)
+    except ValueError as exc:
+        valid = ", ".join(a.value for a in Arch.allCases())
+        raise argparse.ArgumentTypeError(
+            f"invalid arch: {value!r}. valid values: {valid}"
+        ) from exc
 
 
-def generate_distro_map(distros: list[str]) -> dict[str, str]:
-    result: dict[str, str] = {}
-    for d in distros:
-        label = SUPPORT_DISTRO_MAP.get(d)
-        if label:
-            result[d] = label
-    return result
+def parse_distro(value: str) -> Distro:
+    try:
+        return Distro(value)
+    except ValueError as exc:
+        valid = ", ".join(d.value for d in Distro.allCases())
+        raise argparse.ArgumentTypeError(
+            f"invalid distro: {value!r}. valid values: {valid}"
+        ) from exc
 
 
-DEFAULT_ARCHES = [
-    "amd64",
-    "arm64",
-]
+def process_result(result: ProcessResult, release_dir: Path):
+    target_package = (
+        release_dir / f"cloudflare-warp_{result.arch.value}_{result.distro.value}.deb"
+    )
+    print(f"Copied {result.package} -> {target_package}")
+    shutil.copy2(result.package, target_package)
 
+    for bin_name, info in result.bin_infos.items():
+        target_bin_path = (
+            release_dir / f"{bin_name}_{result.arch.value}_{result.distro.value}"
+        )
+        print(f"Copied {info.path} -> {target_bin_path}")
+        shutil.copy2(info.path, target_bin_path)
 
-def unique_release_path(release_dir: Path, file_name: str) -> Path:
-    """Return a non-conflicting target path under release_dir."""
-    candidate = release_dir / file_name
-    if not candidate.exists():
-        return candidate
-
-    stem = candidate.stem
-    suffix = candidate.suffix
-    index = 1
-    while True:
-        candidate = release_dir / f"{stem}__dup{index}{suffix}"
-        if not candidate.exists():
-            return candidate
-        index += 1
-
-
-def copy_to_release(src: Path, release_dir: Path, target_name: str) -> Path:
-    dst = unique_release_path(release_dir, target_name)
-    shutil.copy2(src, dst)
-    return dst
+        if result.distro == Distro.default:
+            extra_bin_name = f"{bin_name}_{result.arch.value}"
+            extra_bin_path = release_dir / extra_bin_name
+            print(f"Copied {info.path} -> {extra_bin_path}")
+            shutil.copy2(info.path, extra_bin_path)
 
 
 def main():
@@ -64,14 +55,16 @@ def main():
     parser.add_argument(
         "--arches",
         nargs="+",
-        default=DEFAULT_ARCHES,
-        help="Target CPU architectures (e.g., amd64 arm64 armhf)",
+        type=parse_arch,
+        default=Arch.allCases(),
+        help=f"Target CPU architectures (e.g. {', '.join(a.value for a in Arch.allCases())})",
     )
     parser.add_argument(
-        "--distro",
+        "--distros",
         nargs="+",
-        default=list(SUPPORT_DISTRO_MAP.keys()),
-        help="Target distributions (e.g., trixie bookworm bullseye)",
+        type=parse_distro,
+        default=Distro.allCases(only_supported=True),
+        help=f"Target distributions (e.g. {', '.join(d.value for d in Distro.allCases(only_supported=True))})",
     )
     parser.add_argument(
         "--dist-dir",
@@ -87,77 +80,16 @@ def main():
 
     latest_version = get_latest_version()[0]
 
-    errors: list[str] = []
-    results: list[ProcessResult] = []
-
-    for distro in generate_distro_map(args.distro).keys():
+    for distro in args.distros:
         for arch in args.arches:
-            try:
-                result = process_deb(distro, arch, dist_dir)
-                if result.version == latest_version:
-                    results.append(result)
-                else:
-                    print(
-                        f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
-                    )
-            except Exception as e:
-                errors.append(f"{distro} {arch}: {e}")
-
-    if not results:
-        print("No artifacts were processed.")
-        if errors:
-            print("Errors:")
-            for err in errors:
-                print(f"  - {err}")
-        return 1
-
-    for item in results:
-        package_name = item.package.name
-        copy_to_release(item.package, release_dir, package_name)
-
-    by_arch: dict[str, list[ProcessResult]] = {}
-    for item in results:
-        by_arch.setdefault(item.arch, []).append(item)
-
-    for arch, arch_results in by_arch.items():
-        trixie_result = next((r for r in arch_results if r.distro == "trixie"), None)
-        if trixie_result is None:
-            errors.append(f"{arch}: no trixie baseline found for binary sha compare")
-            continue
-
-        baseline_sha: dict[str, str] = {}
-        for bin_name, info in trixie_result.bin_infos.items():
-            baseline_sha[bin_name] = info.sha256
-            baseline_target_name = f"{bin_name}_{arch}_trixie_{trixie_result.version}"
-            copy_to_release(info.path, release_dir, baseline_target_name)
-
-        # Copy extra binaries only when sha differs from trixie baseline.
-        for item in arch_results:
-            if item.distro == "trixie":
+            result = process_deb(distro, arch, dist_dir)
+            if result.version != latest_version:
+                print(
+                    f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
+                )
                 continue
-
-            for bin_name, info in item.bin_infos.items():
-                ref_sha = baseline_sha.get(bin_name)
-                if ref_sha is None:
-                    errors.append(
-                        f"{item.distro}/{arch}: missing baseline sha for {bin_name}"
-                    )
-                    continue
-
-                if info.sha256 != ref_sha:
-                    extra_target_name = f"{bin_name}_{arch}_{item.distro}_{item.version}_{info.sha256[:8]}"
-                    copy_to_release(info.path, release_dir, extra_target_name)
-
-    if errors:
-        print("❌ Finished with errors:")
-        for err in errors:
-            print(f"  - {err}")
-        return 1
-    else:
-        print("✅ Finished without errors.")
-
-    return 0
+            process_result(result, release_dir)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
