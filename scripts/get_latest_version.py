@@ -5,6 +5,8 @@ from io import BytesIO
 import argparse
 import time
 
+from compare_versions import compare_versions
+
 
 def get_latest_version(distro: str = "trixie", arch: str = "amd64") -> tuple[str, str]:
     """
@@ -39,26 +41,36 @@ def get_latest_version(distro: str = "trixie", arch: str = "amd64") -> tuple[str
 
     packages = content.strip().split("\n\n")
 
-    pkg_info: dict[str, str] = {}
+    latest_version: str | None = None
+    latest_filename: str | None = None
+
     for pkg_block in packages:
+        pkg_info: dict[str, str] = {}
         for line in pkg_block.split("\n"):
-            if ":" in line:
+            if ": " in line:
                 key, value = line.split(": ", 1)
                 pkg_info[key.strip()] = value.strip()
 
-    if (
-        pkg_info.get("Package") == "cloudflare-warp"
-        and pkg_info.get("Architecture") == arch
-    ):
-        version = pkg_info.get("Version")
-        filename = pkg_info.get("Filename")
-        if version and filename:
-            download_url = f"https://pkg.cloudflareclient.com/{filename}"
-            return (version, download_url)
+        if (
+            pkg_info.get("Package") == "cloudflare-warp"
+            and pkg_info.get("Architecture") == arch
+        ):
+            version = pkg_info.get("Version")
+            filename = pkg_info.get("Filename")
+            if version and filename:
+                if (
+                    latest_version is None
+                    or compare_versions(version, latest_version) > 0
+                ):
+                    latest_version = version
+                    latest_filename = filename
+
+    if latest_version and latest_filename:
+        download_url = f"https://pkg.cloudflareclient.com/{latest_filename}"
+        return (latest_version, download_url)
 
     raise RuntimeError(
-        f"❌ failed to find cloudflare-warp package in {distro}/{arch} repository",
-        pkg_info,
+        f"failed to find cloudflare-warp package in {distro}/{arch} repository"
     )
 
 
