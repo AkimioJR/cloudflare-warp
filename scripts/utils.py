@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 
 from get_latest_version import get_latest_version
 from extract_bin import extract_warp_binaries_from_deb
+from label import Distro, Arch
 
 
 def calculate_sha256(file_path: Path, block_size: int = 2**16) -> str:
@@ -48,20 +49,22 @@ class ProcessResult:
         sha256: str
 
     version: str
-    distro: str
-    arch: str
+    distro: Distro
+    arch: Arch
     dir: Path
     package: Path
     bin_infos: dict[str, BinaryInfo]
 
 
-def process_deb(distro: str, arch: str, dist_dir: Path) -> ProcessResult:
+def process_deb(distro: Distro, arch: Arch, dist_dir: Path) -> ProcessResult:
     version, url = get_latest_version(distro, arch)
-    dist_dir = dist_dir / distro / arch
+    dist_dir = dist_dir / distro.value / arch.value
     dist_dir.mkdir(parents=True, exist_ok=True)
-    deb_name = f"cloudflare-warp_{safe_version_label(version)}_{distro}_{arch}.deb"
+    deb_name = (
+        f"cloudflare-warp_{safe_version_label(version)}_{distro.value}_{arch.value}.deb"
+    )
     target_deb = dist_dir / deb_name
-    print(f"Downloading {distro} {arch} -> {deb_name}")
+    print(f"Downloading {distro.value} {arch.value} -> {deb_name}")
     download_file(url, target_deb)
     bin_dir = dist_dir / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -71,7 +74,8 @@ def process_deb(distro: str, arch: str, dist_dir: Path) -> ProcessResult:
         result = extract_warp_binaries_from_deb(target_deb, tmpdir)
         for name, src in result.items():
             target_path = (
-                bin_dir / f"{name}_{safe_version_label(version)}_{distro}_{arch}"
+                bin_dir
+                / f"{name}_{safe_version_label(version)}_{distro.value}_{arch.value}"
             )
             shutil.copy(src, target_path)
             bin_infos[name] = ProcessResult.BinaryInfo(
