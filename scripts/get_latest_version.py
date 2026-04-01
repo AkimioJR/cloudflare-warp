@@ -7,12 +7,16 @@ import time
 
 from compare_versions import compare_versions
 
+from label import Distro, Arch
 
-def get_latest_version(distro: str = "trixie", arch: str = "amd64") -> tuple[str, str]:
+
+def get_latest_version(
+    distro: Distro = Distro.default, arch: Arch = Arch.default
+) -> tuple[str, str]:
     """
     get the latest version of the cloudflare-warp package and its download link
     """
-    repo_url = f"https://pkg.cloudflareclient.com/dists/{distro}/main/binary-{arch}/Packages.gz"
+    repo_url = f"https://pkg.cloudflareclient.com/dists/{distro.value}/main/binary-{arch.value}/Packages.gz"
 
     headers = {
         "User-Agent": "Debian APT-HTTP/1.3 (2.6.1)",
@@ -53,7 +57,7 @@ def get_latest_version(distro: str = "trixie", arch: str = "amd64") -> tuple[str
 
         if (
             pkg_info.get("Package") == "cloudflare-warp"
-            and pkg_info.get("Architecture") == arch
+            and pkg_info.get("Architecture") == arch.value
         ):
             version = pkg_info.get("Version")
             filename = pkg_info.get("Filename")
