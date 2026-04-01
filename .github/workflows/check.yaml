@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y jq
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           enable-cache: true
           cache-dependency-glob: |
