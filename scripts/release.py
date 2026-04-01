@@ -141,6 +141,7 @@ def main():
         print("Finished with errors:")
         for err in errors:
             print(f"  - {err}")
+        return 1
     else:
         print("Finished without errors.")
 
