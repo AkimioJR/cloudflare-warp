@@ -10,8 +10,8 @@ on:
         required: false
         default: false
         type: boolean
-      no_release:
-        description: "Check for updates without creating a release"
+      skip_release:
+        description: "Skip release new version"
         required: false
         default: false
         type: boolean
@@ -44,7 +44,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Check version
-        if: inputs.skip_check != 'true'
+        if: ${{ !inputs.skip_check }}
         id: check_version
         shell: bash
         run: |
@@ -62,17 +62,17 @@ jobs:
           echo "official_version=$official_version" >> "$GITHUB_OUTPUT"
 
       - name: Download release artifacts
-        if: steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check == 'true'
+        if: ${{ steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check }}
         run: |
           uv run scripts/release.py
 
       - name: List release assets
-        if: steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check == 'true'
+        if: ${{ steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check }}
         run: |
           ls -la dist/release
 
       - name: Publish GitHub Release
-        if: steps.check_version.outputs.needs_sync == 'true'  && inputs.no_release != 'true'
+        if: ${{ steps.check_version.outputs.needs_sync == 'true' && !inputs.skip_release }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.check_version.outputs.official_version }}
