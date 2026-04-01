@@ -3,19 +3,20 @@ from pathlib import Path
 import shutil
 
 from utils import process_deb, ProcessResult
+from get_latest_version import get_latest_version
 
 
 SUPPORT_DISTRO_MAP = {
     "trixie": "Trixie (13)",
     "bookworm": "Bookworm (12)",
     "bullseye": "Bullseye (11)",
-    "buster": "Buster (10)",
-    "stretch": "Stretch (9)",
+    # "buster": "Buster (10)",
+    # "stretch": "Stretch (9)",
     "noble": "Noble (24.04)",
     "jammy": "Jammy (22.04)",
     "focal": "Focal (20.04)",
-    "bionic": "Bionic (18.04)",
-    "xenial": "Xenial (16.04)",
+    # "bionic": "Bionic (18.04)",
+    # "xenial": "Xenial (16.04)",
 }
 
 
@@ -28,7 +29,10 @@ def generate_distro_map(distros: list[str]) -> dict[str, str]:
     return result
 
 
-DEFAULT_ARCHES = ["amd64", "arm64", "armhf"]
+DEFAULT_ARCHES = [
+    "amd64",
+    "arm64",
+]
 
 
 def unique_release_path(release_dir: Path, file_name: str) -> Path:
@@ -81,6 +85,8 @@ def main():
 
     release_dir.mkdir(parents=True, exist_ok=True)
 
+    latest_version = get_latest_version()[0]
+
     errors: list[str] = []
     results: list[ProcessResult] = []
 
@@ -88,7 +94,12 @@ def main():
         for arch in args.arches:
             try:
                 result = process_deb(distro, arch, dist_dir)
-                results.append(result)
+                if result.version == latest_version:
+                    results.append(result)
+                else:
+                    print(
+                        f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
+                    )
             except Exception as e:
                 errors.append(f"{distro} {arch}: {e}")
 
@@ -138,12 +149,12 @@ def main():
                     copy_to_release(info.path, release_dir, extra_target_name)
 
     if errors:
-        print("Finished with errors:")
+        print("❌ Finished with errors:")
         for err in errors:
             print(f"  - {err}")
         return 1
     else:
-        print("Finished without errors.")
+        print("✅ Finished without errors.")
 
     return 0
 
