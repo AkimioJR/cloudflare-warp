@@ -1,0 +1,72 @@
+name: Check Cloudflare Warp Update
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Check version
+        id: check_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          json_payload=$(uv run scripts/check_version.py)
+          needs_sync=$(printf '%s\n' "$json_payload" | jq -r '.needs_sync')
+          official_version=$(printf '%s\n' "$json_payload" | jq -r '.official_version')
+
+          if [[ "$needs_sync" != "true" && "$needs_sync" != "false" ]]; then
+            echo "Invalid needs_sync value: $needs_sync"
+            exit 1
+          fi
+
+          echo "needs_sync=$needs_sync" >> "$GITHUB_OUTPUT"
+          echo "official_version=$official_version" >> "$GITHUB_OUTPUT"
+
+      - name: Build release artifacts
+        if: steps.check_version.outputs.needs_sync == 'true'
+        run: |
+          set -euo pipefail
+          uv run scripts/release.py
+
+      - name: List release assets
+        if: steps.check_version.outputs.needs_sync == 'true'
+        run: |
+          set -euo pipefail
+          ls -la dist/release
+
+      - name: Publish GitHub Release
+        if: steps.check_version.outputs.needs_sync == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.check_version.outputs.official_version }}
+          name: v${{ steps.check_version.outputs.official_version }}
+          generate_release_notes: true
+          files: |
+            dist/release/*
