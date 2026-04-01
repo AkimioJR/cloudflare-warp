@@ -1,6 +1,8 @@
 import argparse
-from pathlib import Path
 import shutil
+from pathlib import Path
+from asyncio import TaskGroup, to_thread, run
+
 
 from utils import process_deb, ProcessResult
 from get_latest_version import get_latest_version
@@ -48,7 +50,23 @@ def process_result(result: ProcessResult, release_dir: Path):
             shutil.copy2(info.path, extra_bin_path)
 
 
-def main():
+async def process(
+    distro: Distro,
+    arch: Arch,
+    dist_dir: Path,
+    release_dir: Path,
+    latest_version: str,
+):
+    result = await process_deb(distro, arch, dist_dir)
+    if result.version != latest_version:
+        print(
+            f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
+        )
+        return
+    await to_thread(process_result, result, release_dir)
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Sync Cloudflare WARP artifacts into dist when official version is newer"
     )
@@ -73,23 +91,18 @@ def main():
     )
     args = parser.parse_args()
 
-    dist_dir = Path(args.dist_dir).resolve()
-    release_dir = dist_dir / "release"
+    async def main():
+        dist_dir = Path(args.dist_dir).resolve()
+        release_dir = dist_dir / "release"
 
-    release_dir.mkdir(parents=True, exist_ok=True)
+        release_dir.mkdir(parents=True, exist_ok=True)
 
-    latest_version = get_latest_version()[0]
+        async with TaskGroup() as tg:
+            latest_version, _ = await get_latest_version()
+            for distro in args.distros:
+                for arch in args.arches:
+                    tg.create_task(
+                        process(distro, arch, dist_dir, release_dir, latest_version)
+                    )
 
-    for distro in args.distros:
-        for arch in args.arches:
-            result = process_deb(distro, arch, dist_dir)
-            if result.version != latest_version:
-                print(
-                    f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
-                )
-                continue
-            process_result(result, release_dir)
-
-
-if __name__ == "__main__":
-    main()
+    run(main())

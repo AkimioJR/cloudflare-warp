@@ -36,18 +36,25 @@ def normalize_version(version: str | None) -> str | None:
 
 
 if __name__ == "__main__":
-    official_version = str(normalize_version(get_latest_version()[0]))
-    repo_version = normalize_version(
-        get_repo_latest_release_tag("AkimioJR", "cloudflare-warp")
-    )
+    from asyncio import run
 
-    needs_sync = (
-        repo_version is None or compare_versions(official_version, repo_version) != 0
-    )
+    async def main():
+        official_version, _ = await get_latest_version()
+        official_version = str(normalize_version(official_version))
+        repo_version = normalize_version(
+            get_repo_latest_release_tag("AkimioJR", "cloudflare-warp")
+        )
 
-    result = {
-        "official_version": official_version,
-        "repo_version": repo_version,
-        "needs_sync": needs_sync,
-    }
-    print(json.dumps(result, indent=2))
+        needs_sync = (
+            repo_version is None
+            or compare_versions(official_version, repo_version) != 0
+        )
+
+        result = {
+            "official_version": official_version,
+            "repo_version": repo_version,
+            "needs_sync": needs_sync,
+        }
+        print(json.dumps(result, indent=2))
+
+    run(main())

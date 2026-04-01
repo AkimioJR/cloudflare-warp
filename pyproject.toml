@@ -4,4 +4,12 @@ version = "0.1.0"
 description = "Scan the Cloudflare Warp repository regularly, automatically download the version, and publish a Release"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "aiofiles>=25.1.0",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "types-aiofiles>=25.1.0.20251011",
+]

@@ -1,17 +1,17 @@
-import urllib.request
-import urllib.error
 import gzip
 from io import BytesIO
-import argparse
-import time
+from asyncio import sleep
+
+from httpx import AsyncClient
 
 from compare_versions import compare_versions
-
 from label import Distro, Arch
 
 
-def get_latest_version(
-    distro: Distro = Distro.default, arch: Arch = Arch.default
+async def get_latest_version(
+    distro: Distro = Distro.default,
+    arch: Arch = Arch.default,
+    max_retries: int = 3,
 ) -> tuple[str, str]:
     """
     get the latest version of the cloudflare-warp package and its download link
@@ -27,18 +27,17 @@ def get_latest_version(
 
     content = None
     last_error = None
-    for attempt in range(3):
+    for attempt in range(max_retries):
         try:
-            req = urllib.request.Request(repo_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=10) as response:
-                raw = response.read()
-            with gzip.GzipFile(fileobj=BytesIO(raw)) as f:
+            async with AsyncClient() as client:
+                response = await client.get(repo_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            with gzip.GzipFile(fileobj=BytesIO(response.content)) as f:
                 content = f.read().decode("utf-8")
             break
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+        except Exception as e:
             last_error = e
-            if attempt < 2:
-                time.sleep(1 + attempt)
+            await sleep((1 + attempt) * 3)
 
     if content is None:
         raise last_error if last_error else RuntimeError("download Packages.gz failed")
@@ -79,6 +78,9 @@ def get_latest_version(
 
 
 if __name__ == "__main__":
+    import argparse
+    from asyncio import run
+
     parser = argparse.ArgumentParser(
         description="Get Cloudflare WARP latest version info"
     )
@@ -97,4 +99,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(get_latest_version(args.distro, args.arch))
+    async def main():
+        version, url = await get_latest_version(args.distro, args.arch)
+        print(f"Latest version: {version}")
+        print(f"Download URL: {url}")
+
+    run(main())
