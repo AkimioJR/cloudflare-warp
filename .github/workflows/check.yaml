@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: "0 4 * * *"
   workflow_dispatch:
+    inputs:
+      skip_check:
+        description: "Skip the latest version check and force download release artifacts, release need to check latest version"
+        required: false
+        default: "false"
+      no_release:
+        description: "Check for updates without creating a release"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -33,6 +42,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Check version
+        if: inputs.skip_check != 'true'
         id: check_version
         shell: bash
         run: |
@@ -49,20 +59,18 @@ jobs:
           echo "needs_sync=$needs_sync" >> "$GITHUB_OUTPUT"
           echo "official_version=$official_version" >> "$GITHUB_OUTPUT"
 
-      - name: Update release artifacts
-        if: steps.check_version.outputs.needs_sync == 'true'
+      - name: Download release artifacts
+        if: steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check == 'true'
         run: |
-          set -euo pipefail
           uv run scripts/release.py
 
       - name: List release assets
-        if: steps.check_version.outputs.needs_sync == 'true'
+        if: steps.check_version.outputs.needs_sync == 'true' || inputs.skip_check == 'true'
         run: |
-          set -euo pipefail
           ls -la dist/release
 
       - name: Publish GitHub Release
-        if: steps.check_version.outputs.needs_sync == 'true'
+        if: steps.check_version.outputs.needs_sync == 'true'  && inputs.no_release != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.check_version.outputs.official_version }}
