@@ -24,6 +24,10 @@ on:
         default: false
         type: boolean
 
+permissions:
+  actions: write # 主要是为了 Docker build cache 使用 type=gha 时更稳，因为 cache backend 可能需要操作 Actions cache
+  contents: read # 读取仓库内容以获取 Dockerfile 和相关文件
+
 env:
   IMAGE_NAME: cloudflare-warp
   IS_LATEST: true
