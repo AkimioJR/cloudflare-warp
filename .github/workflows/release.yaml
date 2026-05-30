@@ -65,12 +65,48 @@ jobs:
         run: |
           ls -la dist/release
 
+      - name: Commit changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "CHANGELOG.md has no changes"
+          else
+            git commit -m "Update Cloudflare WARP changelog for v${{ inputs.app_version }}"
+            git push
+          fi
+
+      - name: Generate release body
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Docker"
+            echo
+            echo '```sh'
+            echo "docker pull akimio/cloudflare-warp:${{ inputs.app_version }}"
+            echo '```'
+            echo
+            echo "## Dockerfile"
+            echo
+            echo '```Dockerfile'
+            cat Dockerfile
+            echo '```'
+            echo
+            echo "## Changelog"
+            echo
+            cat CHANGELOG.md
+          } > release-body.md
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.app_version }}
           name: v${{ inputs.app_version }}
-          generate_release_notes: true
+          body_path: release-body.md
           files: |
             dist/release/*
 
