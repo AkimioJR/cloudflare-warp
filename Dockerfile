@@ -1,4 +1,4 @@
-FROM debian:stable-slim
+FROM debian:trixie-slim
 
 # /run/cloudflare-warp 是 cloudflare-warp 的默认运行时目录
 # /var/lib/cloudflare-warp 是默认数据目录
@@ -10,21 +10,25 @@ ENV WARP_PROXY_LISTEN_PORT=4000 \
     WARP_PROXY_TARGET_PORT=50000
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
-RUN apt-get update && apt-get install -y lsb-release curl gpg ca-certificates socat
-
-RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-    | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-
-RUN tee /etc/apt/sources.list.d/cloudflare-warp.sources << EOF
-Types: deb
-URIs: https://pkg.cloudflareclient.com/
-Suites: trixie
-Components: main
-Signed-By: /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-EOF
-
-RUN apt-get update && apt-get install -y cloudflare-warp
+RUN chmod +x /entrypoint.sh \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gpg \
+        socat \
+    && curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
+        | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg \
+    && printf '%s\n' \
+        'Types: deb' \
+        'URIs: https://pkg.cloudflareclient.com/' \
+        'Suites: trixie' \
+        'Components: main' \
+        'Signed-By: /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg' \
+        > /etc/apt/sources.list.d/cloudflare-warp.sources \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cloudflare-warp \
+    && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/entrypoint.sh"]
