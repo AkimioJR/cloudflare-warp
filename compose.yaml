@@ -1,0 +1,17 @@
+services:
+  cloudflare-warp:
+    image: akimio/cloudflare-warp:latest
+    container_name: cloudflare-warp
+    restart: unless-stopped
+    tty: true
+    network_mode: host
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./lib:/var/lib/cloudflare-warp
+      - ./log:/var/log/cloudflare-warp
+    ports:
+      - 4000:4000
