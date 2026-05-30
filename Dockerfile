@@ -3,7 +3,7 @@ FROM debian:stable-slim
 # /run/cloudflare-warp 是 cloudflare-warp 的默认运行时目录
 # /var/lib/cloudflare-warp 是默认数据目录
 # /var/log/cloudflare-warp 是默认日志目录
-VOLUME ["/var/lib/cloudflare-warp", "/var/log/cloudflare-warp"] 
+VOLUME ["/run/cloudflare-warp", "/var/lib/cloudflare-warp", "/var/log/cloudflare-warp"] 
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
