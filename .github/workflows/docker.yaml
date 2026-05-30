@@ -54,8 +54,8 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=${{ env.APP_VERSION }},enable=${{ env.PUBLISH_VERSION_TAG }}  
             type=raw,value=latest,enable=${{ env.IS_LATEST }}
-            type=raw,value=${{ env.APP_VERSION }},enable=${{ env.PUBLISH_VERSION_TAG }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
