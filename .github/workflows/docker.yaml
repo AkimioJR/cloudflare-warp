@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Validate version tag
-        if: ${{ env.PUBLISH_VERSION_TAG == 'true' && env.APP_VERSION == '' }}
+        if: ${{ env.PUBLISH_VERSION_TAG == 'true' && inputs.app_version == '' }}
         run: |
           echo "app_version is required when publish_version_tag is true"
           exit 1
