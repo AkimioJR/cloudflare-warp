@@ -10,8 +10,20 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    environment:
+      # The IP address socat listens on inside the container.
+      # Not necessary if using host network mode
+      WARP_PROXY_LISTEN_IP: 0.0.0.0
+      # The port exposed by socat for clients to connect to.
+      # Not necessary if using host network mode
+      WARP_PROXY_LISTEN_PORT: 4000
+      # The local Cloudflare WARP proxy port socat forwards traffic to.
+      # Not necessary if using host network mode
+      WARP_PROXY_TARGET_PORT: 50000
     volumes:
       - ./lib:/var/lib/cloudflare-warp
       - ./log:/var/log/cloudflare-warp
     ports:
+      # Expose the proxy port to the host.
+      # Not necessary if using host network mode
       - 4000:4000

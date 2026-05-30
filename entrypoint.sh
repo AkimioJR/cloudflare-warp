@@ -3,6 +3,9 @@ set -euo pipefail
 
 SOCAT_PID=""
 WARP_PID=""
+WARP_PROXY_LISTEN_PORT="${WARP_PROXY_LISTEN_PORT:-4000}"
+WARP_PROXY_LISTEN_IP="${WARP_PROXY_LISTEN_IP:-0.0.0.0}"
+WARP_PROXY_TARGET_PORT="${WARP_PROXY_TARGET_PORT:-50000}"
 
 cleanup() {
 	local exit_code=$?
@@ -22,7 +25,7 @@ cleanup() {
 
 trap cleanup SIGTERM SIGINT EXIT
 
-socat TCP-LISTEN:4000,bind=0.0.0.0,fork,reuseaddr TCP:127.0.0.1:50000 &
+socat "TCP-LISTEN:${WARP_PROXY_LISTEN_PORT},bind=${WARP_PROXY_LISTEN_IP},fork,reuseaddr" "TCP:127.0.0.1:${WARP_PROXY_TARGET_PORT}" &
 SOCAT_PID=$!
 
 warp-svc &

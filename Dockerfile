@@ -5,6 +5,10 @@ FROM debian:stable-slim
 # /var/log/cloudflare-warp 是默认日志目录
 VOLUME ["/run/cloudflare-warp", "/var/lib/cloudflare-warp", "/var/log/cloudflare-warp"] 
 
+ENV WARP_PROXY_LISTEN_PORT=4000 \
+    WARP_PROXY_LISTEN_IP=0.0.0.0 \
+    WARP_PROXY_TARGET_PORT=50000
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
