@@ -1,4 +1,4 @@
-FROM debian:trixie
+FROM debian:stable-slim
 
 # /run/cloudflare-warp 是 cloudflare-warp 的默认运行时目录
 # /var/lib/cloudflare-warp 是默认数据目录
