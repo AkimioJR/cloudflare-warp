@@ -87,10 +87,10 @@ jobs:
             echo "## Docker"
             echo
             echo '```sh'
-            echo "docker pull akimio/cloudflare-warp:${{ inputs.app_version }}"
+            echo "docker pull akimio/cloudflare-warp:v${{ inputs.app_version }}"
             echo '```'
             echo
-            echo "## Docker Compose"
+            echo "### Docker Compose"
             echo
             echo '```yaml'
             cat compose.yaml
