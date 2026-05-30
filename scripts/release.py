@@ -29,12 +29,17 @@ def parse_distro(value: str) -> Distro:
         ) from exc
 
 
-def process_result(result: ProcessResult, release_dir: Path):
+def process_result(result: ProcessResult, release_dir: Path, changelog_output: Path):
     target_package = (
         release_dir / f"cloudflare-warp_{result.arch.value}_{result.distro.value}.deb"
     )
     print(f"Copied {result.package} -> {target_package}")
     shutil.copy2(result.package, target_package)
+
+    if result.distro == Distro.default and result.arch == Arch.default:
+        print(f"Copied {result.changelog} -> {changelog_output}")
+        changelog_output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(result.changelog, changelog_output)
 
     for bin_name, info in result.bin_infos.items():
         target_bin_path = (
@@ -56,6 +61,7 @@ async def process(
     dist_dir: Path,
     release_dir: Path,
     latest_version: str,
+    changelog_output: Path,
 ):
     result = await process_deb(distro, arch, dist_dir)
     if result.version != latest_version:
@@ -63,7 +69,7 @@ async def process(
             f"⚠️ Skipping {distro} {arch} with version {result.version} (latest is {latest_version})"
         )
         return
-    await to_thread(process_result, result, release_dir)
+    await to_thread(process_result, result, release_dir, changelog_output)
 
 
 if __name__ == "__main__":
@@ -89,11 +95,17 @@ if __name__ == "__main__":
         default="dist",
         help="Output dist directory for deb and extracted binaries",
     )
+    parser.add_argument(
+        "--changelog-output",
+        default="CHANGELOG.md",
+        help="Path to write the extracted Cloudflare WARP changelog",
+    )
     args = parser.parse_args()
 
     async def main():
         dist_dir = Path(args.dist_dir).resolve()
         release_dir = dist_dir / "release"
+        changelog_output = Path(args.changelog_output).resolve()
 
         release_dir.mkdir(parents=True, exist_ok=True)
 
@@ -102,7 +114,14 @@ if __name__ == "__main__":
             for distro in args.distros:
                 for arch in args.arches:
                     tg.create_task(
-                        process(distro, arch, dist_dir, release_dir, latest_version)
+                        process(
+                            distro,
+                            arch,
+                            dist_dir,
+                            release_dir,
+                            latest_version,
+                            changelog_output,
+                        )
                     )
 
     run(main())

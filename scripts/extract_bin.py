@@ -1,5 +1,6 @@
 import shutil
 import tarfile
+import gzip
 from io import BytesIO
 from pathlib import Path
 from typing import AsyncIterator
@@ -134,6 +135,55 @@ async def extract_warp_binaries_from_deb(
                     dst.chmod(member.mode)
                 extracted[binary_name] = dst
         return extracted
+
+    return await to_thread(_sync_extract)
+
+
+async def extract_changelog_from_deb(deb_path: Path, output_path: Path) -> Path:
+    """Extract the Cloudflare WARP changelog from a .deb package."""
+    deb_path = Path(deb_path).expanduser().resolve()
+    output_path = Path(output_path).expanduser().resolve()
+
+    if not deb_path.is_file():
+        raise FileNotFoundError(f"deb file not found: {deb_path}")
+
+    data_tar_member = None
+    async for member_name, member_data in __iter_ar_members(deb_path):
+        if member_name.startswith("data.tar"):
+            data_tar_member = member_data
+            break
+
+    if data_tar_member is None:
+        raise FileNotFoundError(f"data.tar.* not found in deb: {deb_path}")
+
+    candidates = [
+        "usr/share/doc/cloudflare-warp/changelog",
+        "./usr/share/doc/cloudflare-warp/changelog",
+        "usr/share/doc/cloudflare-warp/changelog.gz",
+        "./usr/share/doc/cloudflare-warp/changelog.gz",
+    ]
+
+    def _sync_extract() -> Path:
+        with tarfile.open(fileobj=BytesIO(data_tar_member), mode="r:*") as tf:
+            names = set(tf.getnames())
+            member = next((tf.getmember(p) for p in candidates if p in names), None)
+            if member is None:
+                searched = ", ".join(candidates)
+                raise FileNotFoundError(
+                    f"changelog not found in deb payload. searched: {searched}"
+                )
+
+            src = tf.extractfile(member)
+            if src is None:
+                raise RuntimeError(f"failed to read member data: {member.name}")
+
+            content = src.read()
+            if member.name.endswith(".gz"):
+                content = gzip.decompress(content)
+
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_bytes(content)
+            return output_path
 
     return await to_thread(_sync_extract)
 

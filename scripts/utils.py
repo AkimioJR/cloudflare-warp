@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from aiofiles import open as async_open
 
 from get_latest_version import get_latest_version
-from extract_bin import extract_warp_binaries_from_deb
+from extract_bin import extract_changelog_from_deb, extract_warp_binaries_from_deb
 from label import Distro, Arch
 
 
@@ -59,6 +59,7 @@ class ProcessResult:
     arch: Arch
     dir: Path
     package: Path
+    changelog: Path
     bin_infos: dict[str, BinaryInfo]
 
 
@@ -78,8 +79,11 @@ async def process_deb(distro: Distro, arch: Arch, dist_dir: Path) -> ProcessResu
         bin_dir.mkdir(parents=True, exist_ok=True)
         print(f"Extracting binaries from {deb_name} -> {bin_dir}")
         bin_infos: dict[str, ProcessResult.BinaryInfo] = {}
+        changelog_path = dist_dir / f"changelog_{safe_version_label(version)}"
+        await extract_changelog_from_deb(target_deb, changelog_path)
         with TemporaryDirectory() as tmpdir:
-            result = await extract_warp_binaries_from_deb(target_deb, Path(tmpdir))
+            tmp_path = Path(tmpdir)
+            result = await extract_warp_binaries_from_deb(target_deb, tmp_path)
             for name, src in result.items():
                 target_path = (
                     bin_dir
@@ -97,5 +101,6 @@ async def process_deb(distro: Distro, arch: Arch, dist_dir: Path) -> ProcessResu
         arch=arch,
         dir=dist_dir,
         package=target_deb,
+        changelog=changelog_path,
         bin_infos=bin_infos,
     )
