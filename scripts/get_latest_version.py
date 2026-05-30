@@ -94,7 +94,7 @@ if __name__ == "__main__":
         "--arch",
         type=str,
         default="amd64",
-        help="CPU architecture (e.g., amd64, arm64, armhf)",
+        help="CPU architecture (e.g., amd64, arm64)",
     )
 
     args = parser.parse_args()
