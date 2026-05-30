@@ -90,10 +90,10 @@ jobs:
             echo "docker pull akimio/cloudflare-warp:${{ inputs.app_version }}"
             echo '```'
             echo
-            echo "## Dockerfile"
+            echo "## Docker Compose"
             echo
-            echo '```Dockerfile'
-            cat Dockerfile
+            echo '```yaml'
+            cat compose.yaml
             echo '```'
             echo
             echo "## Changelog"
