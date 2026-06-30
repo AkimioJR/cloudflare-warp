@@ -1,19 +1,66 @@
-cloudflare-warp (2026.4.1390) unstable; urgency=medium
+cloudflare-warp (2026.6.822) unstable; urgency=medium
+  This release introduces multiple features from our previous beta release into stable release, including:
+
+  * The client now applies DNS search suffixes configured in your device profile / network policy. Administrators can push a list of DNS search domains that the client appends to single-label queries, alongside any system-configured suffixes. See [DNS search suffixes](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/configure/settings/#dns-search-suffixes) for details.
+  * Upgraded security of device registration to be hardware-backed. Registration tokens can now be generated in the TPM (with TPM 2.0+) whenever it is available to provide stronger protection against device impersonation. See [Hardware-backed registration](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/mdm-deployment/hardware-backed-registration/) for details.
+  * Added a local-file signal source for Emergency Disconnect. In addition to the existing HTTPS polling mechanism, administrators can now configure WARP to monitor for a file on disk; the presence of the file triggers an emergency disconnect even if both Cloudflare and your own infrastructure are unreachable. Either signal being asserted triggers disconnect; both must be cleared for normal operation to resume.
+  * Added new warp-cli debug commands for interactive connection diagnosis. See [Extra debug logging](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/troubleshooting/diagnostic-logs/#extra-debug-logging) for details.
+  * The local DNS proxy now supports DNSSEC passthrough. DNSSEC-signed responses are forwarded to the application intact (including DO/AD bits and RRSIG records), so applications that validate DNSSEC locally — including resolvers and the dig/drill tooling — work correctly through the client.
+  * Added a new MDM format for organization-wide settings, including a cleaner way to configure the compliance environment (e.g. FedRAMP). The previous per-configuration approach still works, but the new format is now recommended. See the updated [Cloudflare One MDM documentation](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/mdm-deployment/parameters/#organization_configs) for details.
+
+  Additional changes and improvements:
+  * Cloudflare Mesh functionality using the Cloudflare One Client is now supported on RHEL 9 and 10.
+  * Cloudflare Mesh now supports hostname-based routing for Cloudflare Tunnel.
+  * Client Certificate device-posture checks now support template variables (e.g. `${serial_number}`, `${device_uuid}`) in the Subject Alternative Name field. Previously only the Common Name field accepted variables, which broke posture rules that pinned identity to a SAN entry.
+  * Improved accessibility by using high contrast colors and more defined color boundaries when high contrast is enabled in the system display settings.
+  * Path MTU Discovery (PMTUD) is now enabled by default.
+  * Fixed the in-client captive-portal browser rendering a blank "Success" page on some airline Wi-Fi networks. The browser now more consistently loads the airline's real portal page so users can complete sign-in from inside the client instead of having to open a separate browser.
+  * Fixed an issue in proxy mode where hostnames containing underscores (e.g. ai_app.com) were rejected, breaking apps that depend on such hostnames (notably ChatGPT sandbox apps). The local proxy now accepts underscore-containing hostnames in CONNECT requests.
+  * Fixed an issue where DNS queries would fail after the connection was idle, requiring users to retry.
+  * Fixed an issue where some Debian releases experienced inaccurate version reporting for posture checks.
+  * Users can now register with team names in any case format without errors.
+  * New UI fixes:
+    * Fixed an issue where users with invalid MDM configurations were returned to the onboarding screen after successful authentication.
+    * Added a re-auth button and banner to the home screen so users don't miss it when their session expires.
+    * Added clear error messaging when the Cloudflare certificate needs to be installed.
+    * Brought back support for pausing the tunnel when connected to user-specified Wi-Fi networks for consumer users.
+    * New client UI now surfaces Split tunnel configuration and Local Domain Fallback configuration.
+    * Added ability to configure proxy mode for consumer users.
+    * Added back the option to quit for consumer users.
+
+  For RHEL deployments, this release introduces a dependency on the Extra Packages for Enterprise Linux repository (EPEL). The EPEL repository provides packages that support the captive portal detection’s in-app browser authentication and system tray icon. See https://docs.fedoraproject.org/en-US/epel/getting-started/ for instructions on enabling EPEL.
+
+  Known issues
+  * Registration may hang at "Checking your organization configuration" due to IPC errors. A system reboot should resolve the error, allowing registration to proceed.
+
+ -- Shrey Amin <samin@cloudflare.com>  Mon, 29 Jun 2026 09:53:49 -0400
+
+cloudflare-warp (2026.5.1155) unstable; urgency=medium
   This release introduces the new Cloudflare One Client UI for Linux! You can expect a cleaner and more intuitive design as well as easier access to common actions and information. Here are some of the many things we have found our users appreciate:
 
   * Right click context menu to access the most common client actions quickly
   * Built-in captive portal login experience
 
   Changes and improvements:
-  * Added a new CLI command: warp-cli mdm refresh. This command executes an immediate refresh of the Mobile Device Management (MDM) configuration file.
-  * Official support for RHEL 9 has been added for Cloudflare Mesh nodes. To install the RHEL 9 package, the Extra Packages for Enterprise Linux (EPEL) repository must be active, as it contains dependencies required for the tray icon and captive portal webview.
-  * Fixed a proxy mode connection stall issue.
+  * Official support for Ubuntu 26.04 LTS has been added.
+  * The client now applies DNS search suffixes configured in your WARP device profile / network policy. Administrators can push a list of DNS search domains that the client appends to single-label queries, alongside any system-configured suffixes. See [DNS search suffixes](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/configure/settings/#dns-search-suffixes) for details.
+  * Administrators can now control which virtual networks (VNETs) are available to which users via WARP device profile settings in the Zero Trust dashboard. Previously, every VNET in the organization was visible to every device; you can now scope the VNET picker per profile so users only see the networks relevant to them. See [VNET availability](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/configure/settings/#vnet-availability) for details.
+  * WARP Connector now supports hostname-based routing. Administrators can define connector routes using stable hostnames instead of CIDR blocks, removing the need to maintain explicit IP ranges for cloud workloads with dynamic IPs. A new connector configuration also enables NAT mode, which masquerades forwarded tunnel traffic so it appears to originate from the connector host's LAN IP — eliminating the requirement to add static routes for the CGNAT range on every device on the private network.
+  * Added a local-file signal source for Emergency Disconnect. In addition to the existing HTTPS polling mechanism, administrators can now configure WARP to monitor for a file on disk; the presence of the file triggers an emergency disconnect even if both Cloudflare and your own infrastructure are unreachable. Either signal being asserted triggers disconnect; both must be cleared for normal operation to resume.
+  * Added new warp-cli debug commands for interactive connection diagnosis. See [Extra debug logging](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/troubleshooting/diagnostic-logs/#extra-debug-logging) for details.
+  * The local DNS proxy now supports DNSSEC passthrough. DNSSEC-signed responses are forwarded to the application intact (including DO/AD bits and RRSIG records), so applications that validate DNSSEC locally — including resolvers and the dig/drill tooling — work correctly through the client.
+  * Added a new MDM format for organization-wide settings, including a cleaner way to configure the compliance environment (e.g. FedRAMP). The previous per-configuration approach still works, but the new format is now recommended. See the updated [Cloudflare One MDM documentation](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/mdm-deployment/parameters/#organization_configs) for details.
+  * Client Certificate device-posture checks now support template variables (e.g. `${serial_number}`, `${device_uuid}`) in the Subject Alternative Name field, matching what the documentation has always claimed. Previously only the Common Name field accepted variables, which broke posture rules that pinned identity to a SAN entry.
+  * Support for Ubuntu 20.04 has been removed; it has reached the end of standard support. Customers still on 20.04 should plan an upgrade — the client may continue to install but is no longer tested or supported on that release.
+  * Fixed an issue where the WARP tunnel could silently stop carrying traffic on Linux when systemd-networkd restarted (for example, during an unattended apt upgrade). The client now monitors netlink for rule deletions and automatically reconnects to rebuild its routing table and policy rule, restoring connectivity without manual intervention.
+  * Fixed reported os_version on newer Debian releases (Debian 13 and any kernel carrying a +debNN+M suffix). Previously the kernel build suffix could cause Cloudflare One device-posture OS-version checks to fail; the client now reports the kernel version in the canonical form posture rules expect.
+  * Fixed an issue in proxy mode where hostnames containing underscores (e.g. ai_app.com) were rejected, breaking apps that depend on such hostnames (notably ChatGPT sandbox apps). The local proxy now accepts underscore-containing hostnames in CONNECT requests.
 
   Known issues
   * Registration may hang at "Checking your organization configuration" due to IPC errors. A system reboot should resolve the error, allowing registration to proceed.
-  * Split tunnel list configuration is not available in the new UI. Management of split tunnel entries is currently only possible via `warp-cli tunnel ip` and `warp-cli tunnel host`. UI support will be added in a future release.
+  * Split tunnel list configuration is not available in the new UI. Management of Split Tunnel entries is currently only possible via `warp-cli tunnel ip` and `warp-cli tunnel host`. UI support will be added in a future release.
 
- -- Yi Huang <yi@cloudflare.com>  Tue, 26 May 2026 08:00:00 -0700
+ -- Yi Huang <yi@cloudflare.com>  Thu, 28 May 2026 10:00:00 -0700
 
 cloudflare-warp (2026.4.1350) unstable; urgency=medium
   This release introduces the new Cloudflare One Client UI for Linux! You can expect a cleaner and more intuitive design as well as easier access to common actions and information. Here are some of the many things we have found our users appreciate:
