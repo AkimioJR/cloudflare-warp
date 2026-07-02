@@ -1,3 +1,8 @@
+cloudflare-warp (2026.6.836) unstable; urgency=medium
+  This package is the same release as 2026.6.822.0, with a fix for our RPM package. Previously the repository served a single build to every OS version, so an install could pull a dependency that isn't available on that release. The repository now serves the correct build for each operating system version, so installs automatically pull the dependencies that version requires. Debian and Ubuntu were not affected.
+
+ -- Shrey Amin <samin@cloudflare.com>  Wed, 01 Jul 2026 09:53:49 -0400
+
 cloudflare-warp (2026.6.822) unstable; urgency=medium
   This release introduces multiple features from our previous beta release into stable release, including:
 
@@ -9,6 +14,7 @@ cloudflare-warp (2026.6.822) unstable; urgency=medium
   * Added a new MDM format for organization-wide settings, including a cleaner way to configure the compliance environment (e.g. FedRAMP). The previous per-configuration approach still works, but the new format is now recommended. See the updated [Cloudflare One MDM documentation](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/mdm-deployment/parameters/#organization_configs) for details.
 
   Additional changes and improvements:
+  * Starting with 2026.6.822.0, the client unifies all API requests under the `api.devices.cloudflare.com` SNI, where previously both `zero-trust-client.cloudflareclient.com` and `notifications.cloudflareclient.com` were used. Review [Cloudflare One Client with firewall](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/firewall/) to ensure systems that rely on SNI inspection do not block the API traffic. The behavior of previous client versions is unaffected.
   * Cloudflare Mesh functionality using the Cloudflare One Client is now supported on RHEL 9 and 10.
   * Cloudflare Mesh now supports hostname-based routing for Cloudflare Tunnel.
   * Client Certificate device-posture checks now support template variables (e.g. `${serial_number}`, `${device_uuid}`) in the Subject Alternative Name field. Previously only the Common Name field accepted variables, which broke posture rules that pinned identity to a SAN entry.
