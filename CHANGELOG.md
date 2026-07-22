@@ -1,3 +1,8 @@
+cloudflare-warp (2026.6.880) unstable; urgency=medium
+  This hotfix resolves a regression that caused a large increase in DNS-over-TCP queries to fallback and internal DNS servers. The client now sends fallback DNS queries over UDP first, falling back to TCP only when a response is truncated, instead of querying both protocols in parallel.
+
+ -- Josh Abbott <jabbott@cloudflare.com>  Mon, 20 Jul 2026 09:53:49 -0400
+
 cloudflare-warp (2026.6.836) unstable; urgency=medium
   This package is the same release as 2026.6.822.0, with a fix for our RPM package. Previously the repository served a single build to every OS version, so an install could pull a dependency that isn't available on that release. The repository now serves the correct build for each operating system version, so installs automatically pull the dependencies that version requires. Debian and Ubuntu were not affected.
 
