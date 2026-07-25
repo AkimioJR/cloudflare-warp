@@ -1,0 +1,14 @@
+[Unit]
+Description=SOCKS/HTTP Proxy Forwarder for Cloudflare WARP
+After=network.target warp-svc.service
+Requires=warp-svc.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/cloudflare-warp
+ExecStart=/usr/bin/socat TCP-LISTEN:${WARP_PROXY_LISTEN_PORT},bind=${WARP_PROXY_LISTEN_IP},fork,reuseaddr TCP:127.0.0.1:${WARP_PROXY_TARGET_PORT}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

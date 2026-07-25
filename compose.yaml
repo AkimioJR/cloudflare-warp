@@ -8,6 +8,7 @@ services:
     privileged: true
     cap_add:
       - NET_ADMIN
+      - SYS_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
     environment:
@@ -20,9 +21,15 @@ services:
       # The local Cloudflare WARP proxy port socat forwards traffic to.
       # Not necessary if using host network mode
       WARP_PROXY_TARGET_PORT: 50000
+      # Memory limit for warp-svc (optional).
+      # Accepts K, M, G suffixes. Example: 512M
+      # Omit to use the default 512M limit in the service unit.
+      WARP_MEMORY_MAX: 512M
     volumes:
       - ./lib:/var/lib/cloudflare-warp
       - ./log:/var/log/cloudflare-warp
+    tmpfs:
+      - /run:exec,mode=0755
     ports:
       # Expose the proxy port to the host.
       # Not necessary if using host network mode

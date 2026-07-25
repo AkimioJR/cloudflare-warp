@@ -1,0 +1,16 @@
+[Unit]
+Description=Cloudflare WARP Service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/cloudflare-warp
+ExecStart=/usr/bin/warp-svc
+Restart=always
+RestartSec=5
+# Default memory limit. Override via WARP_MEMORY_MAX environment variable;
+# the entrypoint generates a drop-in under warp-svc.service.d/ when set.
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

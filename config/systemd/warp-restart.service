@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart warp-svc to reclaim leaked memory
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart warp-svc.service

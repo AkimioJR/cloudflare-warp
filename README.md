@@ -28,6 +28,18 @@ docker pull akimio/cloudflare-warp:<version>
 The image is based on `debian:trixie-slim` and installs Cloudflare WARP from
 Cloudflare's official APT repository.
 
+### Process Management
+
+The container uses **systemd** as PID 1 to manage `warp-svc` and the `socat`
+proxy. systemd provides:
+
+- Automatic restart on crash (`Restart=always`).
+- Cgroup-based memory limits via `MemoryMax` / `MemoryHigh`.
+- A periodic restart timer (`warp-restart.timer`) that restarts `warp-svc` every
+  6 hours to mitigate the known [WARP memory leak][warp-leak].
+
+[warp-leak]: https://noorkhafidzin.com/posts/solving-cloudflare-warp-memory-leaks-with-systemd-auto-restart/
+
 ## Docker Compose
 
 An example Compose file is included:
@@ -36,19 +48,18 @@ An example Compose file is included:
 docker compose up -d
 ```
 
-The container needs access to `/dev/net/tun` and `NET_ADMIN` privileges for WARP.
-The included `compose.yaml` uses host networking by default.
+The container needs `SYS_ADMIN` and `NET_ADMIN` capabilities, access to
+`/dev/net/tun`, and a tmpfs mount on `/run` for systemd. The included
+`compose.yaml` configures all of these.
 
-## Proxy Environment Variables
-
-The container starts `warp-svc` and exposes the local WARP proxy through `socat`.
-These environment variables control the forwarding behavior:
+## Environment Variables
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `WARP_PROXY_LISTEN_IP` | `0.0.0.0` | IP address that `socat` listens on. |
 | `WARP_PROXY_LISTEN_PORT` | `4000` | Port exposed for clients to connect to. |
 | `WARP_PROXY_TARGET_PORT` | `50000` | Local Cloudflare WARP proxy port to forward to. |
+| `WARP_MEMORY_MAX` | _(none)_ | Memory limit for `warp-svc`. Accepts `K`, `M`, `G` suffixes (e.g. `512M`). When set, the entrypoint creates a systemd drop-in that applies `MemoryMax`. When unset, the default service unit uses `MemoryMax=512M`. |
 
 Example:
 
@@ -57,6 +68,7 @@ environment:
   WARP_PROXY_LISTEN_IP: 0.0.0.0
   WARP_PROXY_LISTEN_PORT: 4000
   WARP_PROXY_TARGET_PORT: 50000
+  WARP_MEMORY_MAX: 512M
 ```
 
 ## Automation

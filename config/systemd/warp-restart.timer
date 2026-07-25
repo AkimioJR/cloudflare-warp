@@ -1,0 +1,9 @@
+[Unit]
+Description=Periodically restart warp-svc to mitigate memory leaks
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+
+[Install]
+WantedBy=timers.target
