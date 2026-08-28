@@ -1,7 +1,26 @@
-cloudflare-warp (2026.6.880) unstable; urgency=medium
-  This hotfix resolves a regression that caused a large increase in DNS-over-TCP queries to fallback and internal DNS servers. The client now sends fallback DNS queries over UDP first, falling back to TCP only when a response is truncated, instead of querying both protocols in parallel.
+cloudflare-warp (2026.7.1377) unstable; urgency=medium
+  This hotfix resolves an issue where a small but noticeable percentage of DNS queries fail across platforms.
 
- -- Josh Abbott <jabbott@cloudflare.com>  Mon, 20 Jul 2026 09:53:49 -0400
+ -- Rhett Griggs <rhett@cloudflare.com>  Tue, 25 Aug 2026 10:23:36 -0400
+
+cloudflare-warp (2026.7.1343) unstable; urgency=medium
+  This release introduces multiple features from our previous beta release into stable release, including:
+
+  * When reauthentication is needed for any reason, the notifications are clearer and reduce the actions needed to get you back to work by redirecting to the browser for authentication instead of the app window when necessary.
+  * When a network is blocking or otherwise not supportive of HTTP/3, the client will learn and adapt by switching the order of fallback for that network by starting with HTTP/2 first and then trying HTTP/3 if needed. This reduces delays in time to connectivity when joining older or heavily filtered networks.
+
+  Additional changes and improvements:
+  * Fixed the client not allowing login to another organization when currently showing "Device not in organization."
+  * A DNS search domain parsing failure no longer prevents connection.
+  * Cloud icon now correctly reflects actual connection status instead of showing disconnected while fully connected.
+  * Fixed missing certificate error display due to a race condition.
+  * Fixed empty black window after transitioning from docked dual displays to undocked/internal display.
+  * Fixed hostname routes not working for Cloudflare Mesh when the IP addresses of the hostnames are local addresses.
+
+  Known issues:
+  * When in DNS Only mode, the client may send DNS queries for names that are configured for Local Domain Fallback to the encrypted DNS server instead of falling back to the system configuration. Local Domain Fallback works as expected in other client modes.
+
+ -- Jolin Zhou <jolin@cloudflare.com>  Tue, 18 Aug 2026 12:07:43 -0700
 
 cloudflare-warp (2026.6.836) unstable; urgency=medium
   This package is the same release as 2026.6.822.0, with a fix for our RPM package. Previously the repository served a single build to every OS version, so an install could pull a dependency that isn't available on that release. The repository now serves the correct build for each operating system version, so installs automatically pull the dependencies that version requires. Debian and Ubuntu were not affected.
