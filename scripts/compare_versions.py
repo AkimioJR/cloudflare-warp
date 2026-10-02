@@ -1,4 +1,7 @@
-def compare_versions(v1: str, v2: str) -> int:
+from typing import Literal
+
+
+def compare_versions(v1: str, v2: str) -> Literal[1, -1, 0]:
     """
     compare_versions compares two version strings (e.g., "1.2.3" and "1.2.4").
     It returns:
