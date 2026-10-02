@@ -1,16 +1,15 @@
 import json
 import os
-import urllib.error
-import urllib.request
 
 from compare_versions import compare_versions
 from get_latest_version import get_latest_version
+from httpx import AsyncClient, HTTPStatusError
 
 REPO_OWNER = "AkimioJR"
 REPO_NAME = "cloudflare-warp"
 
 
-def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
+async def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     headers = {
         "Accept": "application/vnd.github+json",
@@ -19,25 +18,23 @@ def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
     if token := os.environ.get("GITHUB_TOKEN"):
         headers["Authorization"] = f"Bearer {token}"
 
-    req = urllib.request.Request(url, headers=headers)
-
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        if exc.code == 404:
+        async with AsyncClient() as client:
+            resp = await client.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        tag = resp.json().get("tag_name")
+    except HTTPStatusError as exc:
+        if exc.response.status_code == 404:
             return None
-        if exc.code == 403:
+        if exc.response.status_code == 403:
             raise RuntimeError(
                 f"GitHub API rate limit exceeded while fetching {url}; "
                 "set GITHUB_TOKEN to raise the limit"
             ) from exc
         raise
-    else:
-        tag = payload.get("tag_name")
-        if isinstance(tag, str) and tag.strip():
-            return tag.strip()
-        return None
+    if isinstance(tag, str) and tag.strip():
+        return tag.strip()
+    return None
 
 
 def normalize_version(version: str | None) -> str | None:
@@ -53,7 +50,7 @@ if __name__ == "__main__":
         official_version, _ = await get_latest_version()
         official_version = str(normalize_version(official_version))
         repo_version = normalize_version(
-            get_repo_latest_release_tag(REPO_OWNER, REPO_NAME)
+            await get_repo_latest_release_tag(REPO_OWNER, REPO_NAME)
         )
 
         needs_sync = (
