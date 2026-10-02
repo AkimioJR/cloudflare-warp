@@ -6,6 +6,9 @@ import urllib.request
 from compare_versions import compare_versions
 from get_latest_version import get_latest_version
 
+REPO_OWNER = "AkimioJR"
+REPO_NAME = "cloudflare-warp"
+
 
 def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
@@ -21,14 +24,20 @@ def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
-            tag = payload.get("tag_name")
-            if isinstance(tag, str) and tag.strip():
-                return tag.strip()
-            return None
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None
+        if exc.code == 403:
+            raise RuntimeError(
+                f"GitHub API rate limit exceeded while fetching {url}; "
+                "set GITHUB_TOKEN to raise the limit"
+            ) from exc
         raise
+    else:
+        tag = payload.get("tag_name")
+        if isinstance(tag, str) and tag.strip():
+            return tag.strip()
+        return None
 
 
 def normalize_version(version: str | None) -> str | None:
@@ -44,7 +53,7 @@ if __name__ == "__main__":
         official_version, _ = await get_latest_version()
         official_version = str(normalize_version(official_version))
         repo_version = normalize_version(
-            get_repo_latest_release_tag("AkimioJR", "cloudflare-warp")
+            get_repo_latest_release_tag(REPO_OWNER, REPO_NAME)
         )
 
         needs_sync = (
