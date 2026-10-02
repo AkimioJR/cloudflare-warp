@@ -1,20 +1,22 @@
 import json
+import os
 import urllib.error
 import urllib.request
-from compare_versions import compare_versions
 
+from compare_versions import compare_versions
 from get_latest_version import get_latest_version
 
 
 def get_repo_latest_release_tag(owner: str, repo: str) -> str | None:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "cloudflare-warp-sync-script",
-        },
-    )
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "cloudflare-warp-sync-script",
+    }
+    if token := os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = f"Bearer {token}"
+
+    req = urllib.request.Request(url, headers=headers)
 
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
