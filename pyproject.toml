@@ -11,5 +11,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "types-aiofiles>=25.1.0.20260518"
+    "ruff>=0.16.10",
+    "ty>=0.0.84",
+    "types-aiofiles>=25.1.0.20260518",
 ]

@@ -1,12 +1,11 @@
 import argparse
 import shutil
+from asyncio import TaskGroup, run, to_thread
 from pathlib import Path
-from asyncio import TaskGroup, to_thread, run
 
-
-from utils import process_deb, ProcessResult
 from get_latest_version import get_latest_version
-from label import Distro, Arch
+from label import Arch, Distro
+from utils import ProcessResult, process_deb
 
 
 def parse_arch(value: str) -> Arch:

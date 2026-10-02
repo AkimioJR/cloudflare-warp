@@ -1,10 +1,10 @@
+import gzip
 import shutil
 import tarfile
-import gzip
+from asyncio import to_thread
+from collections.abc import AsyncIterator
 from io import BytesIO
 from pathlib import Path
-from typing import AsyncIterator
-from asyncio import to_thread
 
 from aiofiles import open as async_open
 
@@ -56,8 +56,7 @@ async def __iter_ar_members(archive_path: Path) -> AsyncIterator[tuple[str, byte
                 member_data = member_data[name_len:]
             else:
                 # Common GNU/System V variant, often ends with '/'.
-                if name.endswith("/"):
-                    name = name[:-1]
+                name = name.removesuffix("/")
 
             yield name, member_data
 
@@ -222,7 +221,7 @@ if __name__ == "__main__":
             )
             for name, path in result.items():
                 print(f"Extracted {name} to: {path}")
-        except Exception as e:
+        except (FileNotFoundError, RuntimeError) as e:
             print(f"Error: {e}")
 
     asyncio.run(main())

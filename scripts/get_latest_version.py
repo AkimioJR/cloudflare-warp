@@ -1,11 +1,10 @@
 import gzip
-from io import BytesIO
 from asyncio import sleep
-
-from httpx import AsyncClient
+from io import BytesIO
 
 from compare_versions import compare_versions
-from label import Distro, Arch
+from httpx import AsyncClient, HTTPError
+from label import Arch, Distro
 
 
 async def get_latest_version(
@@ -35,7 +34,7 @@ async def get_latest_version(
             with gzip.GzipFile(fileobj=BytesIO(response.content)) as f:
                 content = f.read().decode("utf-8")
             break
-        except Exception as e:
+        except (HTTPError, OSError, RuntimeError) as e:
             last_error = e
             await sleep((1 + attempt) * 3)
 
@@ -60,13 +59,16 @@ async def get_latest_version(
         ):
             version = pkg_info.get("Version")
             filename = pkg_info.get("Filename")
-            if version and filename:
-                if (
+            if (
+                version
+                and filename
+                and (
                     latest_version is None
                     or compare_versions(version, latest_version) > 0
-                ):
-                    latest_version = version
-                    latest_filename = filename
+                )
+            ):
+                latest_version = version
+                latest_filename = filename
 
     if latest_version and latest_filename:
         download_url = f"https://pkg.cloudflareclient.com/{latest_filename}"
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     async def main():
-        version, url = await get_latest_version(args.distro, args.arch)
+        version, url = await get_latest_version(Distro(args.distro), Arch(args.arch))
         print(f"Latest version: {version}")
         print(f"Download URL: {url}")
 

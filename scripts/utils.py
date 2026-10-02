@@ -1,15 +1,14 @@
 import shutil
 from dataclasses import dataclass
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from httpx import AsyncClient
 from aiofiles import open as async_open
-
-from get_latest_version import get_latest_version
 from extract_bin import extract_changelog_from_deb, extract_warp_binaries_from_deb
-from label import Distro, Arch
+from get_latest_version import get_latest_version
+from httpx import AsyncClient
+from label import Arch, Distro
 
 
 async def calculate_sha256(file_path: Path, block_size: int = 2**16) -> str:

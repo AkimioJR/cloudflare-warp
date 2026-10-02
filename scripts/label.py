@@ -23,7 +23,7 @@ class Distro(Enum):
     default = NOBLE
 
     @classmethod
-    def allCases(cls, only_supported: bool = False) -> list["Distro"]:
+    def allCases(cls, only_supported: bool = False) -> list[Distro]:
         """
         allCases returns a list of all Distro enum members
         :param only_supported: if True, only return supported distros
@@ -75,7 +75,7 @@ class Arch(Enum):
     default = AMD64
 
     @classmethod
-    def allCases(cls) -> list["Arch"]:
+    def allCases(cls) -> list[Arch]:
         """
         allCases returns a list of all Arch enum members
         """
