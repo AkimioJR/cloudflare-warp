@@ -38,6 +38,8 @@ jobs:
       - name: Check version
         id: check_version
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           json_payload=$(uv run scripts/check_version.py)
