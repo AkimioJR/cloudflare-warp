@@ -1,3 +1,33 @@
+cloudflare-warp (2026.8.2100) unstable; urgency=medium
+  This release includes the following highlights:
+
+  * Traffic to split tunnel excluded resources is no longer briefly blocked while the client is connecting or reconnecting. The client now keeps its learned split tunnel configuration across reconnects.
+  * Support for routing non-RFC 1918 local IPv4 networks through the tunnel when unrestricted LAN inclusion is enabled by policy or MDM.
+  * Faster tunnel reconnections and lower memory use. The hosts file is now read once and shared across the client’s DNS resolvers instead of being reloaded by each one.
+  * Added an MDM setting to prefer IPv4 when resolving hostnames in proxy mode. The setting is off by default.
+
+  Additional changes and improvements:
+  * Improved reauthentication reliability and fixed an issue where a reauthentication could force a new registration.
+  * Improved client reaction to the current network lowering its MTU.
+  * Improved DNS reliability on networks with lower MTUs by clamping the TCP maximum segment size (MSS) for DNS-over-HTTPS connections sent through the tunnel.
+  * Individual DNS-over-HTTPS queries now time out instead of hanging when the upstream server stops responding.
+  * Improved API reliability by retrying requests dropped when reusing pooled connections.
+  * Fixed the client reconnecting while Emergency Disconnect was active after switching organizations or re-registering.
+  * Fixed the client being unable to connect after an upgrade when its stored registration credentials no longer matched its configuration.
+  * Fixed the client service restarting unexpectedly when it was slow to respond, such as after waking from sleep.
+  * Fixed the client window not appearing on first launch after a fresh install on RHEL 10.
+  * Fixed duplicate WARP routing policy rules accumulating on reconnect.
+  * Fixed slow captive portal checks causing the client service to become unresponsive or restart while connecting.
+  * Fixed a race when switching tunnel protocols during key rotation that could prevent WireGuard from connecting.
+  * Fixed the client continuing to report “No network” after a successful manual disconnect.
+  * Fixed a client UI crash that could occur when the daemon connection was reset during an IPC request.
+  * Fixed a startup crash when date formatting data for the system locale had not yet loaded.
+
+  Known issues:
+  * When in DNS Only mode, the client may send DNS queries for names that are configured for Local Domain Fallback to the encrypted DNS server instead of falling back to the system configuration. Local Domain Fallback works as expected in other client modes.
+
+ -- Rhett Griggs <rhett@cloudflare.com>  Tue, 06 Oct 2026 09:45:55 -0400
+
 cloudflare-warp (2026.7.1377) unstable; urgency=medium
   This hotfix resolves an issue where a small but noticeable percentage of DNS queries fail across platforms.
 
