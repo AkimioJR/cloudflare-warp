@@ -1,4 +1,9 @@
-cloudflare-warp (2026.8.2100) unstable; urgency=medium
+cloudflare-warp (2026.8.2110) unstable; urgency=medium
+  This hotfix resolves an issue where the client could repeatedly disconnect and reconnect when a split tunnel configuration with hostname-based entries failed to apply.
+
+ -- Rhett Griggs <rhett@cloudflare.com>  Thu, 08 Oct 2026 20:30:00 -0400
+
+cloudflare-warp (2026.8.3100) unstable; urgency=medium
   This release includes the following highlights:
 
   * Traffic to split tunnel excluded resources is no longer briefly blocked while the client is connecting or reconnecting. The client now keeps its learned split tunnel configuration across reconnects.
