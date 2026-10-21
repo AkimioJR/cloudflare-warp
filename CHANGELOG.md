@@ -1,3 +1,8 @@
+cloudflare-warp (2026.8.2115) unstable; urgency=medium
+  This hotfix addresses an issue building trusted certificate chains.
+
+ -- Logan Praneis <lpraneis@cloudflare.com>  Mon, 19 Oct 2026 20:30:00 -0400
+
 cloudflare-warp (2026.8.2110) unstable; urgency=medium
   This hotfix resolves an issue where the client could repeatedly disconnect and reconnect when a split tunnel configuration with hostname-based entries failed to apply.
 
